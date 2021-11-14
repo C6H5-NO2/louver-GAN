@@ -1,7 +1,7 @@
 import pickle
 import warnings
 from dataclasses import dataclass
-from typing import List, Union
+from typing import List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -22,7 +22,7 @@ class Transformer:
         self.vgm_components = vgm_components
         self.vgm_weight_threshold = vgm_weight_threshold
         self._columns: List[str] = []
-        self._dtypes = None
+        self._dtypes: Optional[pd.Series] = None
         self._meta: List[TransformerMeta] = []
 
     @property

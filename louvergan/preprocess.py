@@ -15,8 +15,8 @@ def preprocess(opt: HyperParam, cont_as_cond=True):
     with open(file) as j:
         desc: dict = json.load(j)
 
-    # transformer = Transformer.load(path_join(opt.checkpoint_path, f'{DATASET_NAME}-transformer.pkl'))
-    transformer = Transformer().fit(df, desc)
+    transformer = Transformer.load(path_join(opt.checkpoint_path, f'{DATASET_NAME}-transformer.pkl'))
+    # transformer = Transformer().fit(df, desc)
     data = transformer.transform(df)
 
     file = path_join(opt.checkpoint_path, f'{DATASET_NAME}-transformer.pkl')
