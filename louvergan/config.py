@@ -19,6 +19,14 @@ class HyperParam:
 
     batch_size: int = 512
 
+    gen_lr: float = 2e-4
+    gen_weight_decay: float = 1e-6
+
+    dis_lr: float = 2e-4
+    dis_pac_size: int = 16
+
+    moving_avg_w: float = .99
+
     def __post_init__(self):
         os.makedirs(self.checkpoint_path, exist_ok=True)
         if torch.cuda.is_available():
@@ -27,7 +35,7 @@ class HyperParam:
 
 
 DATASET_NAME = 'adult'
-DATASET_CC = [
-    {'A': ['sex', 'relationship'], 'B': ['marital-status']},
+DATASET_CORR = [
     {'A': ['education'], 'B': ['education-num']},
+    {'A': ['sex', 'relationship'], 'B': ['marital-status']},
 ]

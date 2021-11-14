@@ -8,6 +8,8 @@ from .util import SPLIT, SlatDim, path_join
 
 
 def preprocess(opt: HyperParam, cont_as_cond=True):
+    assert cont_as_cond, 'cont_as_cond'
+
     file = path_join(opt.dataset_path, f'{DATASET_NAME}/{DATASET_NAME}-train.csv')
     df = pd.read_csv(file)
 

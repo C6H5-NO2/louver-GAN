@@ -52,6 +52,7 @@ class Transformer:
                     vgm = BayesianGaussianMixture(n_components=self.vgm_components, weight_concentration_prior=.001)
                     vgm.fit(col_data)
                 nmode = sum(vgm.weights_ > self.vgm_weight_threshold)
+                assert nmode > 1  # fixme: support singular mode
                 estimator = vgm
 
             else:
@@ -80,15 +81,15 @@ class Transformer:
                 prob = np.clip(vgm.predict_proba(col_data)[:, mask], eps, None)
                 prob = prob / prob.sum(axis=1, keepdims=True)
 
-                selected_component = np.zeros(df.shape[0], dtype=np.int)
+                sel_component = np.zeros(df.shape[0], dtype=np.int)
                 for i in range(df.shape[0]):
-                    selected_component[i] = np.random.choice(col_meta.nmode, p=prob[i])
+                    sel_component[i] = np.random.choice(col_meta.nmode, p=prob[i])
 
-                selected_val = normed_val[np.arange(df.shape[0]), selected_component].reshape(-1, 1).clip(-.99, .99)
-                selected_mode = np.zeros_like(prob)
-                selected_mode[np.arange(df.shape[0]), selected_component] = 1
-                data.append(selected_val)
-                data.append(selected_mode)
+                sel_val = normed_val[np.arange(df.shape[0]), sel_component].reshape(-1, 1).clip(-.99, .99)
+                sel_mode = np.zeros_like(prob)
+                sel_mode[np.arange(df.shape[0]), sel_component] = 1
+                data.append(sel_val)
+                data.append(sel_mode)
 
         return np.concatenate(data, axis=1)
 
@@ -109,15 +110,15 @@ class Transformer:
                 std = np.sqrt(vgm.covariances_).reshape(-1)
                 mask = vgm.weights_ > self.vgm_weight_threshold
 
-                selected_mode = data[:, col_idx + 1: col_idx + 1 + col_meta.nmode]
+                sel_mode = data[:, col_idx + 1: col_idx + 1 + col_meta.nmode]
                 prob = np.ones((data.shape[0], self.vgm_components)) * -100.
-                prob[:, mask] = selected_mode
-                selected_component = np.argmax(prob, axis=1)  # shape (#data_rows,)
-                mean = mean[selected_component]  # shape (#data_rows,)
-                std = std[selected_component]  # shape (#data_rows,)
+                prob[:, mask] = sel_mode
+                sel_component = np.argmax(prob, axis=1)  # shape (#data_rows,)
+                mean = mean[sel_component]  # shape (#data_rows,)
+                std = std[sel_component]  # shape (#data_rows,)
 
-                selected_val = data[:, col_idx].clip(-1, 1)  # shape (#data_rows,)
-                inv_data.append(selected_val * 4. * std + mean)
+                sel_val = data[:, col_idx].clip(-1, 1)  # shape (#data_rows,)
+                inv_data.append(sel_val * 4. * std + mean)
                 col_idx += 1 + col_meta.nmode
 
         inv_data = np.column_stack(inv_data)
