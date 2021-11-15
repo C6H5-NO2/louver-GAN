@@ -8,7 +8,6 @@ from torch.nn.utils import spectral_norm
 class SplitCorrGenerator(nn.Module):
     def __init__(self, a_dims: Sequence[int], b_dims: Sequence[int], latent_dim: int = 128):
         super().__init__()
-        self._latent_dim = latent_dim
         for a_idx, a_dim in enumerate(a_dims):
             setattr(self, f'_corr_gen_a_{a_idx}', nn.Sequential(
                 nn.Linear(a_dim + latent_dim, 64),
@@ -16,11 +15,12 @@ class SplitCorrGenerator(nn.Module):
                 nn.Linear(64, 16),
                 nn.ReLU()
             ))
-        self._n_gen_b = len(b_dims)
         for b_idx, b_dim in enumerate(b_dims):
             setattr(self, f'_corr_gen_b_{b_idx}', nn.Sequential(
                 nn.Linear(16 * len(a_dims), b_dim)
             ))
+        self._n_gen_b = len(b_dims)
+        self._latent_dim = latent_dim
 
     def forward(self, corr_a: Sequence[torch.Tensor]) -> List[torch.Tensor]:
         z = torch.randn(corr_a[0].shape[0], self._latent_dim, device=corr_a[0].device)

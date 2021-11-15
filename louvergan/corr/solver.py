@@ -18,11 +18,13 @@ class CorrSolver:
         self._corr = corr
         self._model: Optional[nn.Module] = None
 
+    @classmethod
+    def from_type(cls, stype: CorrSolverType, corr: Corr):
+        scls = get_corr_solver_from_type(stype)
+        return scls(corr)
+
     def fit(self, loader: DataLoader, conf: CorrSolverConfig, verbose: bool = True):
         return self
-
-    def load(self, state_dict):
-        self._model.load_state_dict(state_dict)
 
     @torch.no_grad()
     def predict(self, batch: torch.Tensor) -> List[torch.Tensor]:
@@ -31,10 +33,9 @@ class CorrSolver:
     def corr_loss(self, batch: torch.Tensor) -> torch.Tensor:
         return torch.tensor(0., device=batch.device, requires_grad=True)
 
-    @classmethod
-    def from_type(cls, stype: CorrSolverType, corr: Corr):
-        scls = get_corr_solver_from_type(stype)
-        return scls(corr)
+    def load(self, state_dict):
+        if self._model is not None:
+            self._model.load_state_dict(state_dict)
 
 
 class CorrSolverCGAN(CorrSolver):
@@ -44,7 +45,7 @@ class CorrSolverCGAN(CorrSolver):
         a_dims = [sum(span for _, span in bs_slat) for bs_slat in self._corr.bias_span_a_per_slat]
         b_dims = [sum(span for _, span in bs_slat) for bs_slat in self._corr.bias_span_b_per_slat]
 
-        generator = SplitCorrGenerator(a_dims, b_dims).to(conf.device).train()
+        generator = SplitCorrGenerator(a_dims, b_dims, conf.latent_dim).to(conf.device).train()
         discriminator = SplitCorrDiscriminator(a_dims, b_dims).to(conf.device).train()
 
         optim_g = SplitOptimizer.from_module(generator, torch.optim.Adam, lr=conf.lr, betas=(.5, .9))
@@ -53,12 +54,12 @@ class CorrSolverCGAN(CorrSolver):
         for i_epoch in range(conf.n_epoch):
             if verbose:
                 print(f'    corr: epoch {i_epoch:04d};', end='')
-            for data, _ in loader:
-                data = data.to(conf.device)
-                corr_a = [get_slices(data, bs_slat) for bs_slat in self._corr.bias_span_a_per_slat]
+            for x_real, _ in loader:
+                x_real = x_real.to(conf.device)
+                corr_a = [get_slices(x_real, bs_slat) for bs_slat in self._corr.bias_span_a_per_slat]
 
                 # step D
-                corr_b_real = [get_slices(data, bs_slat) for bs_slat in self._corr.bias_span_b_per_slat]
+                corr_b_real = [get_slices(x_real, bs_slat) for bs_slat in self._corr.bias_span_b_per_slat]
                 corr_b_real = [
                     (ori + torch.randn_like(ori) * 1e-4).clamp(0., 1.) for ori in corr_b_real
                 ]  # apply noise
@@ -85,7 +86,7 @@ class CorrSolverCGAN(CorrSolver):
 
             loss_trace.append((loss_d.item(), loss_g.item()))
             if verbose:
-                print(f' loss D: {loss_d.item():.4f}, loss G: {loss_g.item():.4f}')
+                print(f' loss D: {loss_d.item():.4f}; loss G: {loss_g.item():.4f}')
             if i_epoch % conf.save_step == 0 or i_epoch == conf.n_epoch - 1:
                 name = f'corr={"~".join(self._corr.a_names)}={"~".join(self._corr.b_names)}=cgan-g-{i_epoch:04d}.pt'
                 path = path_join(conf.checkpoint_path, name)
@@ -111,7 +112,7 @@ class CorrSolverCGAN(CorrSolver):
                 target = torch.argmax(pred[:, bias: bias + span], dim=1)
                 loss.append(F.cross_entropy(fake[:, bias: bias + span], target=target))
                 bias += span
-        return torch.cat(loss).mean()
+        return torch.stack(loss, dim=0).sum()
 
     @staticmethod
     def activate(logits: Sequence[torch.Tensor], bias_span_per_slat: Sequence[Sequence[BiasSpan]],
@@ -125,6 +126,13 @@ class CorrSolverCGAN(CorrSolver):
                 bias += span
             activated.append(torch.cat(slat, dim=1))
         return activated
+
+    def load(self, state_dict, conf: Optional[CorrSolverConfig] = None):
+        if self._model is None:
+            a_dims = [sum(span for _, span in bs_slat) for bs_slat in self._corr.bias_span_a_per_slat]
+            b_dims = [sum(span for _, span in bs_slat) for bs_slat in self._corr.bias_span_b_per_slat]
+            self._model = SplitCorrGenerator(a_dims, b_dims, conf.latent_dim).to(conf.device).eval()
+        self._model.load_state_dict(state_dict)
 
 
 def get_corr_solver_from_type(stype: CorrSolverType) -> Type[CorrSolver]:

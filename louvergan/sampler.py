@@ -2,11 +2,9 @@ from typing import Sequence
 
 import numpy as np
 import torch
+# from torch.utils.data import DataLoader, Dataset, Sampler
 
-from .util import ColumnMeta, SlatDim
-
-
-# todo: use DataLoader, Dataset, Sampler from torch.utils.data
+from .util import ColumnMeta
 
 
 class CondSampler:
@@ -90,33 +88,6 @@ class CondDataLoader:
 
     def train(self, mode: bool = True):
         self._training = mode
-        return self
-
-    def eval(self):
-        return self.train(False)
-
-
-class SplitCondDataLoader:
-    def __init__(self, data: np.ndarray, meta: Sequence[ColumnMeta], batch_size: int,
-                 split: Sequence[SlatDim], device: str):
-        self._cond_dl = CondDataLoader(data, meta, batch_size)
-
-        self._attr_split_size = [slat.attr_dim for slat in split]
-        self._cond_split_size = [slat.cond_dim for slat in split]
-
-        self._device = device
-
-    def __iter__(self):
-        for x, c in self._cond_dl:
-            x_slices = x.to(self._device).split(self._attr_split_size, dim=1)
-            c_slices = c.to(self._device).split(self._cond_split_size, dim=1)
-            yield x_slices, c_slices
-
-    def __len__(self):
-        return len(self._cond_dl)
-
-    def train(self, mode: bool = True):
-        self._cond_dl.train(mode)
         return self
 
     def eval(self):
