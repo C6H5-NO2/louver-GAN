@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from .config import CorrSolverConfig
 from .model import SplitCorrDiscriminator, SplitCorrGenerator
 from .util import Corr, CorrSolverType
+from ..evaluator import LossTracer
 from ..optimizer import SplitOptimizer
 from ..sampler import CondDataLoader
 from ..util import BiasSpan, get_slices, path_join
@@ -33,14 +34,14 @@ class CorrSolver:
     def corr_loss(self, batch: torch.Tensor) -> torch.Tensor:
         return torch.tensor(0., device=batch.device, requires_grad=True)
 
-    def load(self, state_dict):
+    def load(self, state_dict: dict):
         if self._model is not None:
             self._model.load_state_dict(state_dict)
 
 
 class CorrSolverCGAN(CorrSolver):
     def fit(self, loader: CondDataLoader, conf: CorrSolverConfig, verbose: bool = True):
-        loss_trace = []
+        loss_trace = LossTracer(['loss corr d', 'loss corr g'])
 
         a_dims = [sum(span for _, span in bs_slat) for bs_slat in self._corr.bias_span_a_per_slat]
         b_dims = [sum(span for _, span in bs_slat) for bs_slat in self._corr.bias_span_b_per_slat]
@@ -84,14 +85,15 @@ class CorrSolverCGAN(CorrSolver):
                 loss_g.backward()
                 optim_g.step()
 
-            loss_trace.append((loss_d.item(), loss_g.item()))
             if verbose:
                 print(f' loss D: {loss_d.item():.4f}; loss G: {loss_g.item():.4f}')
+            loss_trace.collect(loss_d.item(), loss_g.item())
             if i_epoch % conf.save_step == 0 or i_epoch == conf.n_epoch - 1:
                 name = f'corr={"~".join(self._corr.a_names)}={"~".join(self._corr.b_names)}=cgan-g-{i_epoch:04d}.pt'
                 path = path_join(conf.checkpoint_path, name)
                 torch.save(generator.state_dict(), path)
-        # todo: plot
+
+        loss_trace.plot(tick_step=conf.save_step, figsize=(900, 540))
         self._model = generator.eval()
         return self
 
@@ -127,7 +129,7 @@ class CorrSolverCGAN(CorrSolver):
             activated.append(torch.cat(slat, dim=1))
         return activated
 
-    def load(self, state_dict, conf: Optional[CorrSolverConfig] = None):
+    def load(self, state_dict: dict, conf: Optional[CorrSolverConfig] = None):
         if self._model is None:
             a_dims = [sum(span for _, span in bs_slat) for bs_slat in self._corr.bias_span_a_per_slat]
             b_dims = [sum(span for _, span in bs_slat) for bs_slat in self._corr.bias_span_b_per_slat]

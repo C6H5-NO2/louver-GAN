@@ -2,13 +2,15 @@ from typing import Sequence
 
 import numpy as np
 import torch
-# from torch.utils.data import DataLoader, Dataset, Sampler
 
 from .util import ColumnMeta
 
 
+# from torch.utils.data import DataLoader, Dataset, Sampler
+
+
 class CondSampler:
-    def __init__(self, data: np.array, meta: Sequence[ColumnMeta]):
+    def __init__(self, data: np.ndarray, meta: Sequence[ColumnMeta]):
         assert data.ndim == 2
         self._n_cond_col = len(meta)
         max_nmode = max((m.nmode for m in meta), default=0)
@@ -85,6 +87,10 @@ class CondDataLoader:
         c[np.arange(self._batch_size), self._cond_bias_by_col[sel_col] + sel_mode] = 1
 
         return x, c
+
+    @property
+    def dataset_size(self) -> int:
+        return self._data.shape[0]
 
     def train(self, mode: bool = True):
         self._training = mode

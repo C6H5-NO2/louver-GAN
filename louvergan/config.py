@@ -27,7 +27,7 @@ class HyperParam:
     dis_pac_size: int = 16
 
     lambda_cond: float = 1.
-    lambda_corr: float = 1.
+    lambda_corr: float = .1
     lambda_info: float = .2
     moving_avg_w: float = .99
 

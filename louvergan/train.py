@@ -4,12 +4,14 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from .config import HyperParam
+from .config import DATASET_NAME, HyperParam
 from .corr import CorrSolver
+from .evaluator import LossTracer
 from .model import Discriminator, Generator
 from .optimizer import SplitOptimizer
 from .sampler import CondDataLoader
-from .util import ColumnMeta, path_join
+from .synthesizer import synthesize
+from .util import ColumnMeta, SlatDim, path_join
 
 
 def cond_loss(meta: Sequence[ColumnMeta], x_fake_noact: torch.Tensor, cond: torch.Tensor) -> torch.Tensor:
@@ -33,17 +35,18 @@ def cond_loss(meta: Sequence[ColumnMeta], x_fake_noact: torch.Tensor, cond: torc
     return (loss * mask).sum() / loss.shape[0]
 
 
-def train(opt: HyperParam, meta: Sequence[ColumnMeta], loader: CondDataLoader,
-          generator: Generator, discriminator: Discriminator, evaluator,
-          corr_solvers: Sequence[CorrSolver]):
+def train(opt: HyperParam, split: Sequence[SlatDim], meta: Sequence[ColumnMeta],
+          loader: CondDataLoader, generator: Generator, discriminator: Discriminator,
+          evaluator, transformer, corr_solvers: Sequence[CorrSolver]):
+    loss_trace = LossTracer(['loss d adv', 'loss g adv'])
+
     optim_g = SplitOptimizer.from_module(generator, torch.optim.Adam,
                                          lr=opt.gen_lr, betas=(.5, .9), weight_decay=opt.gen_weight_decay)
     optim_d = SplitOptimizer.from_module(discriminator, torch.optim.Adam, lr=opt.dis_lr, betas=(.5, .999))
 
     for i_epoch in range(opt.n_epoch):
         print(f'epoch {i_epoch:04d}')
-        for _ in range(len(loader)):
-            x_real, cond = loader.get_batch()
+        for x_real, cond in loader:
             x_real = x_real.to(opt.device)
             cond = cond.to(opt.device)
 
@@ -90,16 +93,16 @@ def train(opt: HyperParam, meta: Sequence[ColumnMeta], loader: CondDataLoader,
         print(f'loss G: {loss_g_adv.item():.4f} (adv); all: {loss_g.item():.4f}, '
               f'cond: {loss_g_cond.item():.4f}, corr: {loss_g_corr.item():.4f}, info:{loss_g_info.item():.4f}')
 
-        # evaluator.collect_loss(loss_d.item(), loss_g_adv.item())
+        loss_trace.collect(loss_d.item(), loss_g_adv.item())
 
         if i_epoch % opt.save_step == 0 or i_epoch == opt.n_epoch - 1:
             torch.save(generator.state_dict(), path_join(opt.checkpoint_path, f'louver-g-{i_epoch:04d}.pt'))
 
-            # syn_df = synthesize(opt, meta, meta.dataset_rows, generator.state_dict(), sampler, transformer)
-            # syn_df.to_csv(path_join(opt.checkpoint_path, f'{DATASET_NAME}-louver-{i_epoch:04d}.csv'), index=False)
+            syn_df = synthesize(opt, split, meta,
+                                loader.dataset_size, generator.state_dict(), loader, transformer,
+                                path_join(opt.checkpoint_path, f'{DATASET_NAME}-louver-{i_epoch:04d}.csv'))
+            loader.train()
             # evaluator.analyse_ml_performance(syn_df)
 
-    # evaluator.plot_loss()
+    loss_trace.plot(tick_step=opt.save_step)
     # evaluator.plot_ml_info()
-
-    return generator, discriminator

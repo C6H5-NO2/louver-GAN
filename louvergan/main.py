@@ -64,8 +64,9 @@ def main():
     print('----- discriminator -----')
     print(discriminator)
 
-    # evaluator = None
-    train(opt, meta, loader, generator, discriminator, None, corr_solvers)
+    evaluator = None
+
+    train(opt, split, meta, loader, generator, discriminator, evaluator, transformer, corr_solvers)
 
 
 if __name__ == '__main__':
