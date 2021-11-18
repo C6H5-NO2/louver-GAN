@@ -37,7 +37,7 @@ class Transformer:
         self._columns = df.columns.to_list()
         self._dtypes = df.dtypes.copy()
         for col_name in self._columns:
-            col_data = df[col_name].values.reshape(-1, 1)
+            col_data = df[col_name].to_numpy().reshape(-1, 1)
             col_type = desc[col_name][TYPE]
 
             if col_type == DISCRETE:
@@ -65,7 +65,7 @@ class Transformer:
         assert len(self._columns) == len(df.columns) and all(sc == dc for sc, dc in zip(self._columns, df.columns))
         data = []
         for col_name, col_meta in zip(self._columns, self._meta):
-            col_data = df[col_name].values.reshape(-1, 1)
+            col_data = df[col_name].to_numpy().reshape(-1, 1)
 
             if col_meta.discrete:
                 data.append(col_meta.estimator.transform(col_data))
@@ -76,7 +76,7 @@ class Transformer:
                 std = np.sqrt(vgm.covariances_).reshape(1, -1)  # shape (1, #vgm_components)
                 mask = vgm.weights_ > self.vgm_weight_threshold
 
-                normed_val = ((col_data - mean) / (4. * std))[:, mask]  # shape (#data_rows, #valid_components)
+                normed_val = ((col_data - mean) / (2. * std))[:, mask]  # shape (#data_rows, #valid_components)
                 eps = 1e-9  # dtype is np.float64
                 prob = np.clip(vgm.predict_proba(col_data)[:, mask], eps, None)
                 prob = prob / prob.sum(axis=1, keepdims=True)
@@ -118,7 +118,7 @@ class Transformer:
                 std = std[sel_component]  # shape (#data_rows,)
 
                 sel_val = data[:, col_idx].clip(-1, 1)  # shape (#data_rows,)
-                inv_data.append(sel_val * 4. * std + mean)
+                inv_data.append(sel_val * 2. * std + mean)
                 col_idx += 1 + col_meta.nmode
 
         inv_data = np.column_stack(inv_data)

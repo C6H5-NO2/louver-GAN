@@ -14,7 +14,7 @@ class HyperParam:
     checkpoint_path: str = './ckpt/'
     device: str = 'cpu'
 
-    n_epoch: int = 100  # 1600
+    n_epoch: int = 300
     save_step: int = 50
 
     latent_dim: int = 128
@@ -43,3 +43,9 @@ DATASET_CORR = [
     {'A': ['education'], 'B': ['education-num']},
     {'A': ['sex', 'relationship'], 'B': ['marital-status']},
 ]
+DATASET_EVAL = {
+    'statistics': ['education', ],
+    'classification': 'label',
+    'regression': 'hours-per-week',
+    'clustering': 'label',
+}

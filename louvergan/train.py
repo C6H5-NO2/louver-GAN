@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from .config import DATASET_NAME, HyperParam
 from .corr import CorrSolver
-from .evaluator import LossTracer
+from .evaluator import Trace
 from .model import Discriminator, Generator
 from .optimizer import SplitOptimizer
 from .sampler import CondDataLoader
@@ -38,7 +38,7 @@ def cond_loss(meta: Sequence[ColumnMeta], x_fake_noact: torch.Tensor, cond: torc
 def train(opt: HyperParam, split: Sequence[SlatDim], meta: Sequence[ColumnMeta],
           loader: CondDataLoader, generator: Generator, discriminator: Discriminator,
           evaluator, transformer, corr_solvers: Sequence[CorrSolver]):
-    loss_trace = LossTracer(['loss d adv', 'loss g adv'])
+    loss_trace = Trace(['loss d adv', 'loss g adv'])
 
     optim_g = SplitOptimizer.from_module(generator, torch.optim.Adam,
                                          lr=opt.gen_lr, betas=(.5, .9), weight_decay=opt.gen_weight_decay)
@@ -102,7 +102,7 @@ def train(opt: HyperParam, split: Sequence[SlatDim], meta: Sequence[ColumnMeta],
                                 loader.dataset_size, generator.state_dict(), loader, transformer,
                                 path_join(opt.checkpoint_path, f'{DATASET_NAME}-louver-{i_epoch:04d}.csv'))
             loader.train()
-            # evaluator.analyse_ml_performance(syn_df)
+            evaluator.evaluate(syn_df)
 
-    loss_trace.plot(tick_step=opt.save_step)
-    # evaluator.plot_ml_info()
+    loss_trace.plot(figsize=(900, 540), title='louver gan loss',
+                    xticks=np.arange(0, opt.n_epoch + opt.save_step, opt.save_step))

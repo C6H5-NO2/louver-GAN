@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Dict, List, NamedTuple, Sequence
+from typing import Dict, Iterable, List, NamedTuple, Sequence
 
 from ..util import BiasSpan, ColumnMeta, get_column_bias_span
 
@@ -17,9 +17,8 @@ class Corr(NamedTuple):
     b_names: List[str]
 
     @classmethod
-    def from_dict(cls, corr_dict: Dict[str, List[str]], columns: Sequence[str], meta: Sequence[ColumnMeta]):
+    def from_dict(cls, corr_dict: Dict[str, Iterable[str]], columns: Sequence[str], meta: Sequence[ColumnMeta]):
         assert 'A' in corr_dict and 'B' in corr_dict
         bias_span_a = [get_column_bias_span(col, columns, meta, include_scalar=False) for col in corr_dict['A']]
         bias_span_b = [get_column_bias_span(col, columns, meta, include_scalar=False) for col in corr_dict['B']]
-        # return cls([bias_span_a], [bias_span_b])
-        return cls([bias_span_a], [bias_span_b], corr_dict['A'], corr_dict['B'])
+        return cls([bias_span_a], [bias_span_b], list(corr_dict['A']), list(corr_dict['B']))

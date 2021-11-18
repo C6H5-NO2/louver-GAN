@@ -6,8 +6,8 @@ class CorrSolverConfig:
     checkpoint_path: str
     device: str
 
-    n_epoch: int = 800
-    save_step: int = 1000
+    n_epoch: int = 1000
+    save_step: int = 50
 
     latent_dim: int = 128
     batch_size: int = 256

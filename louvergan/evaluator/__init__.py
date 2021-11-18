@@ -1,5 +1,7 @@
-from .loss_tracer import LossTracer
+from .evaluator import Evaluator
+from .trace import Trace
 
 __all__ = [
-    'LossTracer'
+    'Evaluator',
+    'Trace',
 ]

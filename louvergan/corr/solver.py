@@ -1,5 +1,6 @@
 from typing import List, Optional, Sequence, Type
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,7 +9,7 @@ from torch.utils.data import DataLoader
 from .config import CorrSolverConfig
 from .model import SplitCorrDiscriminator, SplitCorrGenerator
 from .util import Corr, CorrSolverType
-from ..evaluator import LossTracer
+from ..evaluator import Trace
 from ..optimizer import SplitOptimizer
 from ..sampler import CondDataLoader
 from ..util import BiasSpan, get_slices, path_join
@@ -24,7 +25,7 @@ class CorrSolver:
         scls = get_corr_solver_from_type(stype)
         return scls(corr)
 
-    def fit(self, loader: DataLoader, conf: CorrSolverConfig, verbose: bool = True):
+    def fit(self, loader: DataLoader, conf: CorrSolverConfig, verbose: bool = False):
         return self
 
     @torch.no_grad()
@@ -35,13 +36,12 @@ class CorrSolver:
         return torch.tensor(0., device=batch.device, requires_grad=True)
 
     def load(self, state_dict: dict):
-        if self._model is not None:
-            self._model.load_state_dict(state_dict)
+        pass
 
 
 class CorrSolverCGAN(CorrSolver):
-    def fit(self, loader: CondDataLoader, conf: CorrSolverConfig, verbose: bool = True):
-        loss_trace = LossTracer(['loss corr d', 'loss corr g'])
+    def fit(self, loader: CondDataLoader, conf: CorrSolverConfig, verbose: bool = False):
+        loss_trace = Trace(['loss corr d', 'loss corr g'])
 
         a_dims = [sum(span for _, span in bs_slat) for bs_slat in self._corr.bias_span_a_per_slat]
         b_dims = [sum(span for _, span in bs_slat) for bs_slat in self._corr.bias_span_b_per_slat]
@@ -93,7 +93,8 @@ class CorrSolverCGAN(CorrSolver):
                 path = path_join(conf.checkpoint_path, name)
                 torch.save(generator.state_dict(), path)
 
-        loss_trace.plot(tick_step=conf.save_step, figsize=(900, 540))
+        loss_trace.plot(figsize=(900, 540), title=f'corr pretrain: {self._corr.a_names} => {self._corr.b_names}',
+                        xticks=np.arange(0, conf.n_epoch + conf.save_step, conf.save_step))
         self._model = generator.eval()
         return self
 
