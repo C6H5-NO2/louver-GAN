@@ -3,6 +3,7 @@ from typing import Dict, Iterable
 import numpy as np
 
 from .plot import plot_line
+from ..polyfill import zip_strict
 
 
 class Trace:
@@ -13,8 +14,7 @@ class Trace:
         return len(next(iter(self._trace.values())))
 
     def collect(self, *args):
-        assert len(args) == len(self._trace)
-        for k, a in zip(self._trace, args):
+        for k, a in zip_strict(self._trace, args):
             self._trace[k].append(a)
 
     def plot(self, plot_mean: bool = False, **kwargs):

@@ -11,7 +11,7 @@ from sklearn.neural_network import MLPRegressor
 
 regressors = [
     (Lasso, dict()),
-    (MLPRegressor, dict()),
+    (MLPRegressor, dict(max_iter=300)),
     (GradientBoostingRegressor, dict()),
     (RandomForestRegressor, dict(max_depth=20, n_jobs=-1)),
 ]

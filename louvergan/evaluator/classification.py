@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score, roc_auc_score
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.tree import DecisionTreeClassifier
@@ -12,8 +12,8 @@ from sklearn.tree import DecisionTreeClassifier
 # || binary classification
 
 binary_classifiers = [
-    (LogisticRegression, dict(class_weight='balanced', n_jobs=-1)),
-    (MLPClassifier, dict()),
+    (LogisticRegression, dict(class_weight='balanced', max_iter=300, n_jobs=-1)),
+    (MLPClassifier, dict(max_iter=300)),
     (AdaBoostClassifier, dict()),
     (RandomForestClassifier, dict(max_depth=20, n_jobs=-1)),
     (DecisionTreeClassifier, dict(max_depth=30, class_weight='balanced')),
@@ -21,6 +21,7 @@ binary_classifiers = [
 
 binary_metrics = {
     'acc': accuracy_score,
+    'bacc': balanced_accuracy_score,
     'f1': f1_score,
     'auroc': roc_auc_score,
 }
@@ -42,8 +43,8 @@ def binary_classification(x_train: np.ndarray, x_test: np.ndarray,
 # || multiclass classification
 
 multiclass_classifiers = [
-    (LogisticRegression, dict(class_weight='balanced', n_jobs=-1)),
-    (MLPClassifier, dict()),
+    (LogisticRegression, dict(class_weight='balanced', max_iter=300, n_jobs=-1)),
+    (MLPClassifier, dict(max_iter=300)),
     (AdaBoostClassifier, dict()),
     (RandomForestClassifier, dict(max_depth=20, n_jobs=-1)),
     (DecisionTreeClassifier, dict(max_depth=30, class_weight='balanced')),

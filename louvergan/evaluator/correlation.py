@@ -6,8 +6,8 @@ import pandas as pd
 from sklearn.metrics import normalized_mutual_info_score
 from sklearn.preprocessing import KBinsDiscretizer
 
-from .ipy import display
 from .statistics import jensen_shannon_divergence
+from ..polyfill import display, zip_strict
 from ..util import ColumnMeta
 
 
@@ -36,21 +36,20 @@ def pairwise_mi(data: np.ndarray, meta: Iterable[ColumnMeta]) -> np.ndarray:
     return mat
 
 
-# todo: rewrite
-def view_posterior(real_df: pd.DataFrame, fake_df: pd.DataFrame,
-                   evidence_cols: Sequence[str], posterior_col: str):
-    if type(evidence_cols) is str:
-        raise TypeError
-    real_group = real_df.groupby(evidence_cols)[posterior_col]
-    fake_group = fake_df.groupby(evidence_cols)[posterior_col]
-    for name, real_ser in real_group:
-        fake_ser: pd.Series = fake_group.get_group(name)
-        if len(evidence_cols) == 1:
-            name = (name,)
-        print('-' * 30)
-        print(', '.join(f'{c} == {n}' for c, n in zip(evidence_cols, name)))
-        jensen_shannon_divergence(real_ser, fake_ser, verbose=True)
-    print('-' * 30)
+# # todo: rewrite
+# def view_posterior(real_df: pd.DataFrame, fake_df: pd.DataFrame, evidence_cols: Sequence[str], posterior_col: str):
+#     if type(evidence_cols) is str:
+#         raise TypeError
+#     real_group = real_df.groupby(evidence_cols)[posterior_col]
+#     fake_group = fake_df.groupby(evidence_cols)[posterior_col]
+#     for name, real_ser in real_group:
+#         fake_ser: pd.Series = fake_group.get_group(name)
+#         if len(evidence_cols) == 1:
+#             name = (name,)
+#         print('-' * 30)
+#         print(', '.join(f'{c} == {n}' for c, n in zip_strict(evidence_cols, name)))
+#         jensen_shannon_divergence(real_ser, fake_ser, verbose=True)
+#     print('-' * 30)
 
 
 # todo: rewrite

@@ -9,6 +9,7 @@ from .corr import CorrSolver
 from .evaluator import Trace
 from .model import Discriminator, Generator
 from .optimizer import SplitOptimizer
+from .polyfill import zip_strict
 from .sampler import CondDataLoader
 from .synthesizer import synthesize
 from .util import ColumnMeta, SlatDim, path_join
@@ -18,7 +19,7 @@ def cond_loss(meta: Sequence[ColumnMeta], x_fake_noact: torch.Tensor, cond: torc
     bias = 0
     loss = []
     cond_slices = cond.split([m.nmode for m in meta], dim=1)
-    for col_meta, col_cond in zip(meta, cond_slices):
+    for col_meta, col_cond in zip_strict(meta, cond_slices):
         bias += int(not col_meta.discrete)
         span = col_meta.nmode
         target = torch.argmax(col_cond, dim=1)  # i.e. relative bias
@@ -95,14 +96,14 @@ def train(opt: HyperParam, split: Sequence[SlatDim], meta: Sequence[ColumnMeta],
 
         loss_trace.collect(loss_d.item(), loss_g_adv.item())
 
-        if i_epoch % opt.save_step == 0 or i_epoch == opt.n_epoch - 1:
-            torch.save(generator.state_dict(), path_join(opt.checkpoint_path, f'louver-g-{i_epoch:04d}.pt'))
-
-            syn_df = synthesize(opt, split, meta,
-                                loader.dataset_size, generator.state_dict(), loader, transformer,
-                                path_join(opt.checkpoint_path, f'{DATASET_NAME}-louver-{i_epoch:04d}.csv'))
-            loader.train()
-            evaluator.evaluate(syn_df)
+        # if i_epoch % opt.save_step == 0 or i_epoch == opt.n_epoch - 1:
+        #     torch.save(generator.state_dict(), path_join(opt.checkpoint_path, f'louver-g-{i_epoch:04d}.pt'))
+        # 
+        #     syn_df = synthesize(opt, split, meta,
+        #                         loader.dataset_size, generator.state_dict(), loader, transformer,
+        #                         path_join(opt.checkpoint_path, f'{DATASET_NAME}-louver-{i_epoch:04d}.csv'))
+        #     loader.train()
+        #     evaluator.evaluate(syn_df)
 
     loss_trace.plot(figsize=(900, 540), title='louver gan loss',
                     xticks=np.arange(0, opt.n_epoch + opt.save_step, opt.save_step))

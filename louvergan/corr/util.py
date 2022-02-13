@@ -1,8 +1,37 @@
 from enum import Enum, auto
-from typing import Dict, Iterable, List, NamedTuple, Sequence
+from typing import Dict, List, NamedTuple
+from typing import Iterable, Sequence, Tuple
 
-from ..util import BiasSpan, ColumnMeta, get_column_bias_span
+import torch
 
+from ..util import ColumnMeta
+
+# || slicing
+
+BiasSpan = Tuple[int, int]
+
+
+def get_column_bias_span(col_name: str, columns: Sequence[str], meta: Sequence[ColumnMeta],
+                         include_scalar: bool = False) -> BiasSpan:
+    idx = columns.index(col_name)
+    bias = sum(meta[i].nmode + int(not meta[i].discrete) for i in range(idx))
+    span = meta[idx].nmode
+    if include_scalar:
+        span += int(not meta[idx].discrete)
+    else:
+        bias += int(not meta[idx].discrete)
+    return bias, span
+
+
+def get_slices(batch: torch.Tensor, bias_span_s: Iterable[BiasSpan]) -> torch.Tensor:
+    slices = []
+    for bias, span in bias_span_s:
+        s = batch[..., bias: bias + span]
+        slices.append(s)
+    return torch.cat(slices, dim=-1)
+
+
+# || corr
 
 class CorrSolverType(Enum):
     NONE = auto()

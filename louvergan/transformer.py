@@ -9,6 +9,7 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.mixture import BayesianGaussianMixture
 from sklearn.preprocessing import OneHotEncoder
 
+from .polyfill import zip_strict
 from .util import CONTINUOUS, ColumnMeta, DISCRETE, TYPE
 
 
@@ -62,9 +63,9 @@ class Transformer:
         return self
 
     def transform(self, df: pd.DataFrame) -> np.ndarray:
-        assert len(self._columns) == len(df.columns) and all(sc == dc for sc, dc in zip(self._columns, df.columns))
+        assert all(sc == dc for sc, dc in zip_strict(self._columns, df.columns))
         data = []
-        for col_name, col_meta in zip(self._columns, self._meta):
+        for col_name, col_meta in zip_strict(self._columns, self._meta):
             col_data = df[col_name].to_numpy().reshape(-1, 1)
 
             if col_meta.discrete:

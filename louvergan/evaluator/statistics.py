@@ -5,8 +5,8 @@ import pandas as pd
 from scipy.spatial.distance import jensenshannon
 from scipy.stats import wasserstein_distance
 
-from .ipy import display
 from .plot import plot_cdf
+from ..polyfill import display, zip_strict
 from ..util import ColumnMeta
 
 
@@ -43,7 +43,7 @@ def statistical_similarity(real_df: pd.DataFrame, fake_df: pd.DataFrame,
                            meta: Iterable[ColumnMeta], columns: Optional[Iterable[str]] = None) -> pd.DataFrame:
     if columns is None:
         columns = real_df.columns
-    d_col_names = set(c for m, c in zip(meta, real_df.columns) if m.discrete)
+    d_col_names = set(c for m, c in zip_strict(meta, real_df.columns) if m.discrete)
     dist = []
     for col in columns:
         if col in d_col_names:

@@ -10,20 +10,20 @@ from .classification import \
     multiclass_classification, multiclass_classifiers, multiclass_metrics
 from .clustering import clustering, clustering_metrics, clusters
 from .correlation import pairwise_mi, posterior_jsd
-from .ipy import Markdown, display
 from .plot import plot_mi
 from .regression import regression, regression_metrics, regressors
 from .statistics import statistical_similarity
 from .trace import Trace
 from .transformer import EvaluatorTransformer
 from ..config import DATASET_CORR, DATASET_EVAL, DATASET_NAME, HyperParam
+from ..polyfill import display, Markdown
 from ..util import ColumnMeta, path_join
 
 
 class Evaluator:
     def __init__(self, opt: HyperParam, meta: Iterable[ColumnMeta]):
         filterwarnings(action='once', category=FutureWarning)
-        filterwarnings(action='default', category=ConvergenceWarning)
+        filterwarnings(action='always', category=ConvergenceWarning)
         filterwarnings(action='ignore', category=UndefinedMetricWarning)
 
         self._real_df = pd.read_csv(path_join(opt.dataset_path, f'{DATASET_NAME}/{DATASET_NAME}-train.csv'))
@@ -141,7 +141,7 @@ class Evaluator:
         data = self._transformer.transform(fake_df)
 
         mi_mat = pairwise_mi(data.to_numpy(), self._meta)
-        plot_mi(mi_mat)
+        plot_mi(mi_mat, self._real_df.columns)
         mi_err = pd.DataFrame([{
             'rmse': mean_squared_error(self._cached_real_mi_mat, mi_mat, squared=False),
             'mae': mean_absolute_error(self._cached_real_mi_mat, mi_mat)

@@ -2,7 +2,7 @@ import os
 from dataclasses import dataclass
 
 import torch
-import torch.backends.cudnn as cudnn
+from torch.backends import cudnn
 
 
 # todo: change this file
@@ -14,11 +14,11 @@ class HyperParam:
     checkpoint_path: str = './ckpt/'
     device: str = 'cpu'
 
-    n_epoch: int = 300
+    n_epoch: int = 1000
     save_step: int = 50
 
     latent_dim: int = 128
-    batch_size: int = 512
+    batch_size: int = 256
 
     gen_lr: float = 2e-4
     gen_weight_decay: float = 1e-6
@@ -38,14 +38,41 @@ class HyperParam:
             self.device = 'cuda:0'
 
 
-DATASET_NAME = 'adult'
+# || adult
+# DATASET_NAME = 'adult'
+# DATASET_CORR = [
+#     {'A': ['education'], 'B': ['education-num']},
+#     # {'A': ['sex', 'relationship'], 'B': ['marital-status']},
+# ]
+# DATASET_EVAL = {
+#     'statistics': ['education', ],
+#     'classification': 'label',
+#     'regression': 'hours-per-week',
+#     'clustering': 'label',
+# }
+
+
+# || bank
+DATASET_NAME = 'bank'
 DATASET_CORR = [
-    {'A': ['education'], 'B': ['education-num']},
-    {'A': ['sex', 'relationship'], 'B': ['marital-status']},
+    {'A': ['education'], 'B': ['job']},
 ]
 DATASET_EVAL = {
-    'statistics': ['education', ],
-    'classification': 'label',
-    'regression': 'hours-per-week',
-    'clustering': 'label',
+    'statistics': ['age', ],
+    'classification': 'y',
+    'regression': 'cons.conf.idx',
+    'clustering': 'y',
 }
+
+
+# || student
+# DATASET_NAME = 'student'
+# DATASET_CORR = [
+#     {'A': ['famsup'], 'B': ['paid']},
+#     {'A': ['Pstatus'], 'B': ['famsize']},
+# ]
+# DATASET_EVAL = {
+#     'statistics': ['age', ],
+#     'regression': 'G3',
+#     'clustering': 'G3',
+# }

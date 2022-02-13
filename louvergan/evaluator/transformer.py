@@ -7,11 +7,12 @@ from sklearn.preprocessing import MinMaxScaler, OrdinalEncoder
 from ..util import ColumnMeta
 
 
+# todo: see LabelBinarizer & sklearn-pandas
 class EvaluatorTransformer:
     def __init__(self):
         self._d_idx, self._c_idx = [], []
         self._oe = OrdinalEncoder()
-        self._mm = MinMaxScaler(feature_range=(0, 1))
+        self._mm = MinMaxScaler(feature_range=(-1, 1))
 
     def fit(self, df: pd.DataFrame, meta: Iterable[ColumnMeta]):
         self._d_idx = [i for i, m in enumerate(meta) if m.discrete]

@@ -3,6 +3,7 @@ from typing import Sequence
 import numpy as np
 import torch
 
+from .polyfill import zip_strict
 from .util import ColumnMeta
 
 
@@ -44,6 +45,8 @@ class CondSampler:
 class CondDataLoader:
     def __init__(self, data: np.ndarray, meta: Sequence[ColumnMeta], batch_size: int):
         assert data.ndim == 2
+        assert data.shape[0] // batch_size > 0, 'batch size too large'
+
         self._sampler = CondSampler(data, meta)
         self._data = data
         self._batch_size = batch_size
@@ -79,7 +82,7 @@ class CondDataLoader:
             sel_col, sel_mode = self._sampler.sample_freq(self._batch_size)
 
         ridx = []
-        for col, mode in zip(sel_col, sel_mode):
+        for col, mode in zip_strict(sel_col, sel_mode):
             ridx.append(np.random.choice(self._ridx_by_col_mode[col][mode]))
         x = torch.tensor(self._data[ridx], dtype=torch.float32)
 

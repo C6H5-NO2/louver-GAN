@@ -1,12 +1,14 @@
 from typing import Sequence
 
 import numpy as np
+import pandas as pd
 import torch
 
 from .config import DATASET_CORR, DATASET_NAME, HyperParam
 from .corr import Corr, CorrSolver, CorrSolverConfig, CorrSolverType
 from .evaluator import Evaluator
 from .model import Discriminator, Generator
+from .polyfill import display, zip_strict
 from .preprocess import preprocess
 from .sampler import CondDataLoader
 from .train import train
@@ -31,7 +33,7 @@ def load_corr_solvers(opt: HyperParam, paths: Sequence[str],
     assert len(paths) == len(DATASET_CORR)
     corr_solvers = []
     corr_config = CorrSolverConfig(checkpoint_path=opt.checkpoint_path, device=opt.device)
-    for path, corr in zip(paths, DATASET_CORR):
+    for path, corr in zip_strict(paths, DATASET_CORR):
         print(f'CORR: {corr["A"]} => {corr["B"]}')
         solver = CorrSolver.from_type(stype, Corr.from_dict(corr, columns, meta))
         state_dict = torch.load(path, map_location=corr_config.device)
@@ -44,18 +46,19 @@ def load_corr_solvers(opt: HyperParam, paths: Sequence[str],
 def main():
     print(f'dataset: {DATASET_NAME}')
     opt = HyperParam()
-    set_seed(12757)
+    set_seed()
     print(opt)
 
     transformer, data, split = preprocess(opt)
     columns = transformer.columns
     meta = transformer.meta
+    display(pd.DataFrame(meta, index=columns).T)
 
-    # corr_solvers = pretrain_corr_solvers(opt, data, columns, meta, CorrSolverType.CGAN)
-    corr_solvers = load_corr_solvers(opt, [
-        './ckpt/corr=education=education-num=cgan-g-0799.pt',
-        './ckpt/corr=sex~relationship=marital-status=cgan-g-0799.pt',
-    ], columns, meta, CorrSolverType.CGAN)
+    corr_solvers = pretrain_corr_solvers(opt, data, columns, meta, CorrSolverType.NONE)
+    # corr_solvers = load_corr_solvers(opt, [
+    #     './ckpt/corr=education=education-num=cgan-g-0799.pt',
+    #     './ckpt/corr=sex~relationship=marital-status=cgan-g-0799.pt',
+    # ], columns, meta, CorrSolverType.CGAN)
 
     loader = CondDataLoader(data, meta, opt.batch_size)
 

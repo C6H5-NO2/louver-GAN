@@ -3,6 +3,7 @@ import json
 import pandas as pd
 
 from .config import DATASET_NAME, HyperParam
+from .polyfill import zip_strict
 from .transformer import Transformer
 from .util import SPLIT, SlatDim, path_join
 
@@ -17,8 +18,8 @@ def preprocess(opt: HyperParam, cont_as_cond=True):
     with open(file) as j:
         desc: dict = json.load(j)
 
-    transformer = Transformer.load(path_join(opt.checkpoint_path, f'{DATASET_NAME}-transformer.pkl'))
-    # transformer = Transformer().fit(df, desc)
+    # transformer = Transformer.load(path_join(opt.checkpoint_path, f'{DATASET_NAME}-transformer.pkl'))
+    transformer = Transformer().fit(df, desc)
     data = transformer.transform(df)
 
     file = path_join(opt.checkpoint_path, f'{DATASET_NAME}-transformer.pkl')
@@ -34,7 +35,7 @@ def preprocess(opt: HyperParam, cont_as_cond=True):
     print(data_info)
 
     split = [SlatDim(0, 0)]
-    for col_name, col_meta in zip(transformer.columns, transformer.meta):
+    for col_name, col_meta in zip_strict(transformer.columns, transformer.meta):
         if SPLIT in desc[col_name] and desc[col_name][SPLIT]:
             split.append(SlatDim(0, 0))
         if col_meta.discrete:
