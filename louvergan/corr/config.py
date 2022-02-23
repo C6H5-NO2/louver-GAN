@@ -6,7 +6,7 @@ class CorrSolverConfig:
     checkpoint_path: str
     device: str
 
-    n_epoch: int = 1
+    n_epoch: int = 350  # 350 is enough for ae
     save_step: int = 100
 
     latent_dim: int = 128

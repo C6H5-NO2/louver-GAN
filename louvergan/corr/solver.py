@@ -125,10 +125,14 @@ class CorrSolverAE(CorrSolver):
                     (pred[:, bias: bias + span] - fake[:, bias: bias + span]).norm(p=1, dim=1, keepdim=True)
                 )
                 bias += span
-        return torch.stack(loss, dim=0).sum()
+        return torch.stack(loss, dim=0).mean()
 
-    def load(self, state_dict: dict):
-        raise NotImplementedError
+    def load(self, state_dict: dict, conf: Optional[CorrSolverConfig] = None):
+        if self._model is None:
+            a_dims = [sum(span for _, span in bs_slat) for bs_slat in self._corr.bias_span_a_per_slat]
+            b_dims = [sum(span for _, span in bs_slat) for bs_slat in self._corr.bias_span_b_per_slat]
+            self._model = SplitCorrAutoEncoder(a_dims, b_dims).to(conf.device).eval()
+        self._model.load_state_dict(state_dict)
 
 
 class CorrSolverCGAN(CorrSolver):
@@ -208,7 +212,7 @@ class CorrSolverCGAN(CorrSolver):
                 target = torch.argmax(pred[:, bias: bias + span], dim=1)
                 loss.append(F.cross_entropy(fake[:, bias: bias + span], target=target))
                 bias += span
-        return torch.stack(loss, dim=0).sum()
+        return torch.stack(loss, dim=0).mean()
 
     def load(self, state_dict: dict, conf: Optional[CorrSolverConfig] = None):
         if self._model is None:

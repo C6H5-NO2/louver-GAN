@@ -57,7 +57,8 @@ class Generator(nn.Module):
             x.append(gen(s))
         x = torch.cat(x, dim=1)
         self._x_noact = x
-        return self.activate(x)
+        x = self.activate(x)
+        return x
 
     @property
     def x_no_activation(self) -> torch.Tensor:

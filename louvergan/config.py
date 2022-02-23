@@ -27,8 +27,8 @@ class HyperParam:
     dis_pac_size: int = 16
 
     lambda_cond: float = 1.
-    lambda_corr: float = .1
-    lambda_info: float = .2
+    lambda_corr: float = .05  # AE use .05
+    lambda_info: float = .2  # fixme: not used
     moving_avg_w: float = .99
 
     def __post_init__(self):
@@ -39,30 +39,30 @@ class HyperParam:
 
 
 # || adult
-# DATASET_NAME = 'adult'
-# DATASET_CORR = [
-#     {'A': ['education'], 'B': ['education-num']},
-#     # {'A': ['sex', 'relationship'], 'B': ['marital-status']},
-# ]
-# DATASET_EVAL = {
-#     'statistics': ['education', ],
-#     'classification': 'label',
-#     'regression': 'hours-per-week',
-#     'clustering': 'label',
-# }
+DATASET_NAME = 'adult'
+DATASET_CORR = [
+    {'A': ['education'], 'B': ['education-num']},
+    # {'A': ['sex', 'relationship'], 'B': ['marital-status']},
+]
+DATASET_EVAL = {
+    'statistics': ['education', ],
+    'classification': 'label',
+    'regression': 'hours-per-week',
+    'clustering': 'label',
+}
 
 
 # || bank
-DATASET_NAME = 'bank'
-DATASET_CORR = [
-    {'A': ['education'], 'B': ['job']},
-]
-DATASET_EVAL = {
-    'statistics': ['age', ],
-    'classification': 'y',
-    'regression': 'cons.conf.idx',
-    'clustering': 'y',
-}
+# DATASET_NAME = 'bank'
+# DATASET_CORR = [
+#     {'A': ['education'], 'B': ['job']},
+# ]
+# DATASET_EVAL = {
+#     'statistics': ['age', ],
+#     'classification': 'y',
+#     'regression': 'cons.conf.idx',
+#     'clustering': 'y',
+# }
 
 
 # || student

@@ -73,37 +73,39 @@ def train(opt: HyperParam, split: Sequence[SlatDim], meta: Sequence[ColumnMeta],
             y_fake = discriminator(x_fake, cond)
             loss_g_adv = -torch.mean(y_fake)
 
-            feat_fake = discriminator.features
-            _ = discriminator(x_real, cond)
-            feat_real = discriminator.features
-            feat_info = generator.move_average(feat_fake.mean(dim=0), feat_fake.std(dim=0),
-                                               feat_real.mean(dim=0), feat_real.std(dim=0))
-            loss_g_info = (feat_info[0] - feat_info[2]).norm(p=2) + (feat_info[1] - feat_info[3]).norm(p=2)
+            # feat_fake = discriminator.features.clone()
+            # _ = discriminator(x_real, cond)
+            # feat_real = discriminator.features
+            # feat_info = generator.move_average(feat_fake.mean(dim=0), feat_fake.std(dim=0),
+            #                                    feat_real.mean(dim=0), feat_real.std(dim=0))
+            # loss_g_info = (feat_info[0] - feat_info[2]).norm(p=2) + (feat_info[1] - feat_info[3]).norm(p=2)
+            loss_g_info = torch.zeros(1, device=opt.device)
 
             loss_g_cond = cond_loss(meta, x_fake_noact, cond)
 
-            loss_g_corr = torch.stack([solver.corr_loss(x_fake_noact) for solver in corr_solvers], dim=0).sum()
+            loss_g_corr = torch.stack([solver.corr_loss(x_fake_noact) for solver in corr_solvers], dim=0).mean()
 
             optim_g.zero_grad()
+            # fixme: bug on info loss
             loss_g = loss_g_adv + opt.lambda_cond * loss_g_cond \
-                     + opt.lambda_corr * loss_g_corr + opt.lambda_info * loss_g_info
+                     + opt.lambda_corr * loss_g_corr # + opt.lambda_info * loss_g_info
             loss_g.backward()
             optim_g.step()
 
         print(f'loss D: {loss_d.item():.4f}; R/F: {critic_real:.4f}/{critic_fake:.4f}')
         print(f'loss G: {loss_g_adv.item():.4f} (adv); all: {loss_g.item():.4f}, '
-              f'cond: {loss_g_cond.item():.4f}, corr: {loss_g_corr.item():.4f}, info:{loss_g_info.item():.4f}')
+              f'cond: {loss_g_cond.item():.4f}, corr: {loss_g_corr.item():.4f}, info: {loss_g_info.item():.4f}')
 
         loss_trace.collect(loss_d.item(), loss_g_adv.item())
 
-        # if i_epoch % opt.save_step == 0 or i_epoch == opt.n_epoch - 1:
-        #     torch.save(generator.state_dict(), path_join(opt.checkpoint_path, f'louver-g-{i_epoch:04d}.pt'))
-        # 
-        #     syn_df = synthesize(opt, split, meta,
-        #                         loader.dataset_size, generator.state_dict(), loader, transformer,
-        #                         path_join(opt.checkpoint_path, f'{DATASET_NAME}-louver-{i_epoch:04d}.csv'))
-        #     loader.train()
-        #     evaluator.evaluate(syn_df)
+        if i_epoch % opt.save_step == 0 or i_epoch == opt.n_epoch - 1:
+            torch.save(generator.state_dict(), path_join(opt.checkpoint_path, f'louver-g-{i_epoch:04d}.pt'))
+
+            syn_df = synthesize(opt, split, meta,
+                                loader.dataset_size, generator.state_dict(), loader, transformer,
+                                path_join(opt.checkpoint_path, f'{DATASET_NAME}-louver-{i_epoch:04d}.csv'))
+            loader.train()
+            evaluator.evaluate(syn_df)
 
     loss_trace.plot(figsize=(900, 540), title='louver gan loss',
                     xticks=np.arange(0, opt.n_epoch + opt.save_step, opt.save_step))
