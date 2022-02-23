@@ -42,7 +42,7 @@ class HyperParam:
 DATASET_NAME = 'adult'
 DATASET_CORR = [
     {'A': ['education'], 'B': ['education-num']},
-    # {'A': ['sex', 'relationship'], 'B': ['marital-status']},
+    {'A': ['sex', 'relationship'], 'B': ['marital-status']},
 ]
 DATASET_EVAL = {
     'statistics': ['education', ],

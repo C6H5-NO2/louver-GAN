@@ -54,7 +54,10 @@ def main():
     meta = transformer.meta
     display(pd.DataFrame(meta, index=columns).T)
 
-    corr_solvers = pretrain_corr_solvers(opt, data, columns, meta, CorrSolverType.NONE)
+    # choose one of these
+    # corr_solvers = pretrain_corr_solvers(opt, data, columns, meta, CorrSolverType.NONE)
+    # corr_solvers = pretrain_corr_solvers(opt, data, columns, meta, CorrSolverType.AE)
+    # corr_solvers = pretrain_corr_solvers(opt, data, columns, meta, CorrSolverType.CGAN)
     # corr_solvers = load_corr_solvers(opt, [
     #     './ckpt/corr=education=education-num=cgan-g-0799.pt',
     #     './ckpt/corr=sex~relationship=marital-status=cgan-g-0799.pt',
