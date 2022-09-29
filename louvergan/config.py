@@ -15,7 +15,7 @@ class HyperParam:
     device: str = 'cpu'
 
     n_epoch: int = 1000
-    save_step: int = 50
+    save_step: int = 100
 
     latent_dim: int = 128
     batch_size: int = 256
